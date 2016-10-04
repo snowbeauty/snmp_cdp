@@ -10,16 +10,20 @@ import getpass
 import re
 
 #community = 'D3L1V3RY55'
-community = 'test123'
 
 parser = argparse.ArgumentParser(description='Update interface descriptions based on CDP information')
-parser.add_argument('-f', '--filename',
+parser.add_argument('-c', '--community', help='community string',
+        action='store',
+        type=str,
+        required=True)
+parser.add_argument('-f', '--hostsfile', help='filename',
 	action='store',
 	type=str,
-	dest='hostsfile',
-	default='Error: Specify filename')
+	default='hostfile.txt')
+args =  parser.parse_args()
 
-inputargs = parser.parse_args()
+inputargs = args.hostsfile
+community = args.community
 
 def get_username():
     return pwd.getpwuid(os.getuid()).pw_name
@@ -29,7 +33,7 @@ def get_password():
 
 # Open file and read content line by line. Every line should be 1 switch.
 def get_list_of_switches():
-    inputfile = open(inputargs.hostsfile, 'r')
+    inputfile = open(inputargs, 'r')
     return inputfile
 
 def get_cdp_neighbours():
@@ -127,16 +131,16 @@ def copy_configuration_to_switch():
     ''')
     print stdout.read()
 
-def prepare_switch_config():
-    with open('interface_configuration.txt') as input_data:
-         for line in input_data:
-             if line.strip() starts with 'switchname':
-                break
-        
-         for line in input_data:
-             if line.strip() starts with '==================================':
-                break
-             print line
+#def prepare_switch_config():
+#    with open('interface_configuration.txt') as input_data:
+#         for line in input_data:
+#             if line.strip() starts with 'switchname':
+#                break
+#        
+#         for line in input_data:
+#             if line.strip() starts with '==================================':
+#                break
+#             print line
 
     
 
