@@ -9,8 +9,6 @@ import pwd
 import getpass
 import re
 
-#community = 'D3L1V3RY55'
-
 parser = argparse.ArgumentParser(description='Update interface descriptions based on CDP information')
 parser.add_argument('-c', '--community', help='community string',
         action='store',
