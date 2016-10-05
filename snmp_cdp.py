@@ -7,7 +7,7 @@ import paramiko
 import os
 import pwd
 import getpass
-import re
+#import re
 
 parser = argparse.ArgumentParser(description='Update interface descriptions based on CDP information')
 parser.add_argument('-c', '--community', help='community string',
@@ -34,7 +34,7 @@ def get_list_of_switches():
     inputfile = open(inputargs, 'r')
     return inputfile
 
-def get_cdp_neighbours():
+def get_cdp_neighbours(host):
     errorIndication, errorStatus, errorIndex, varBindTable = cmdgen.CommandGenerator().bulkCmd(
                  cmdgen.CommunityData(community),
                  cmdgen.UdpTransportTarget((host, 161)),
@@ -44,7 +44,7 @@ def get_cdp_neighbours():
             )
     return varBindTable
 
-def get_cdp_interfaces():
+def get_cdp_interfaces(host):
     errorIndication, errorStatus, errorIndex, varBindTable = cmdgen.CommandGenerator().bulkCmd(
                  cmdgen.CommunityData(community),
                  cmdgen.UdpTransportTarget((host, 161)),
@@ -54,7 +54,7 @@ def get_cdp_interfaces():
             )
     return varBindTable
 
-def get_all_local_interfaces():
+def get_all_local_interfaces(host):
     errorIndication, errorStatus, errorIndex, varBindTable = cmdgen.CommandGenerator().bulkCmd(
                  cmdgen.CommunityData(community),
                  cmdgen.UdpTransportTarget((host, 161)),
@@ -64,7 +64,7 @@ def get_all_local_interfaces():
             )
     return varBindTable
 
-def get_all_current_descriptions():
+def get_all_current_descriptions(host):
     errorIndication, errorStatus, errorIndex, varBindTable = cmdgen.CommandGenerator().bulkCmd(
                  cmdgen.CommunityData(community),
                  cmdgen.UdpTransportTarget((host, 161)),
@@ -74,13 +74,13 @@ def get_all_current_descriptions():
             )
     return varBindTable
 
-def get_cdp_entries():
+def get_cdp_entries(host):
     """Word als eerst uitgevoerd als je het script runt"""
 
-    cdp_neighbours = get_cdp_neighbours()
-    cdp_interfaces = get_cdp_interfaces()
-    all_local_interfaces = get_all_local_interfaces()
-    all_current_descriptions = get_all_current_descriptions()
+    cdp_neighbours = get_cdp_neighbours(host)
+    cdp_interfaces = get_cdp_interfaces(host)
+    all_local_interfaces = get_all_local_interfaces(host)
+    all_current_descriptions = get_all_current_descriptions(host)
 
     cdp_entries = {}
 
@@ -112,7 +112,20 @@ def get_cdp_entries():
 
     return cdp_entries
 
+def prepare_configuration_for_switches():
+  list_of_switches = get_list_of_switches()
+  for host in list_of_switches:
+    print(host)
+    f.write("switchname " + host + "\n")
+
+    for ifindex, values in get_cdp_entries(host).items():
+            f.write("interface " + (values["local_interface"] + "\n"))
+            f.write("! old_description " + (values["current_description"] + "\n"))
+            f.write("description -= " + (values["remote_host"] + " " + values["remote_interface"] + " =-" + "\n" + "\n"))
+    f.write("==============================\n")
+
 def copy_configuration_to_switch():
+    #This is for testing at this moment.
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(
       paramiko.AutoAddPolicy())
@@ -130,6 +143,7 @@ def copy_configuration_to_switch():
     print stdout.read()
 
 #def prepare_switch_config():
+# Trying to get config ready to push to switch
 #    with open('interface_configuration.txt') as input_data:
 #         for line in input_data:
 #             if line.strip() starts with 'switchname':
@@ -149,15 +163,5 @@ if __name__ == '__main__':
   password = get_password()
 
   f=open("interface_configuration.txt","w") # This is file with all configuration changes
-  list_of_switches = get_list_of_switches()
-  for host in list_of_switches:
-    print(host)
-    f.write("switchname " + host + "\n")
-
-    for ifindex, values in get_cdp_entries().items():
-            f.write("interface " + (values["local_interface"] + "\n"))
-            f.write("! old_description " + (values["current_description"] + "\n"))
-            f.write("description -= " + (values["remote_host"] + " " + values["remote_interface"] + " =-" + "\n" + "\n"))
-    f.write("==============================\n")
-    copy_configuration_to_switch()
+  prepare_configuration_for_switches()
   f.close()
